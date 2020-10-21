@@ -32,7 +32,7 @@
     },
     {
       "name": "Aquarium",
-      "url": "http://testserver1.sh.intel.com:7013/aquarium/aquarium.html?numFish=1000&startWait=10&runFor=300",
+      "url": "http://user-awfy.sh.intel.com:8080/awfy/ARCworkloads/WebGLSamples/aquarium/aquarium.html?startWait=10&runFor=300&canvasWidth=5120&canvasHeight=2880&numFish=1000",
       "run_times": 3,
       "sleep_interval": 300
     },
