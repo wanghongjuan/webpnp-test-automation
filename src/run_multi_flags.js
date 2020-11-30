@@ -28,11 +28,10 @@ async function runWithFlag(deviceInfo) {
 }
 
 /*
-* Update config.json to set chrome flag, and dev_mode to true
+* Update config.json to set chrome flag
 */
 async function updateConfig(flag) {
   settings.chrome_flags = flag;
-  settings.dev_mode = true;
   await fs.promises.writeFile(
     path.join(process.cwd(), 'config.json'),
     JSON.stringify(settings, null, 4));

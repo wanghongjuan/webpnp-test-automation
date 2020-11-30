@@ -6,23 +6,27 @@ const os = require('os');
 const axios = require('axios').default;
 const sevenZ = require('7zip-min');
 const net = require('net');
+const Client = require('ssh2-sftp-client');
 
 const localChromiumDir = path.join(process.cwd(), 'chromium_binary');
 
 /*
 * Exec chromium build on remote host
 * @param {String}, commit id
+* @param {String}, actionType, one of ['build', 'log']
 */
-async function remoteExecChromiumBuild(commitId) {
-  const message = {command: "build", content: commitId};
+async function remoteExecCommand(commitId, actionType, base_number, compared_number) {
+  let message = { command: "build", content: commitId };
+  if (actionType === "log")
+    message = { command: "log", base_number: base_number, compared_number: compared_number };
   const host = settings["chromium_builder"]["host"];
   const port = settings["chromium_builder"]["port"];
-  const chromiumUrl = await new Promise((resolve, reject) => {
+  const result = await new Promise((resolve, reject) => {
     const client = new net.Socket();
     client.connect(port, host, () => {
       client.write(JSON.stringify(message));
     });
-    
+
     client.on('data', data => {
       console.log('Received: ' + data);
       let status = JSON.parse(data).status;
@@ -30,15 +34,15 @@ async function remoteExecChromiumBuild(commitId) {
       // Socket connected
       if (status === 0) {
         console.log(msg);
-        console.log("Waiting for build completed, this may take a very long time...");
-      // Build done, this will take a very long time
+        console.log(`Waiting for ${actionType} command execution completed, this may take very long time...`);
+        // Build done, this will take a very long time
       } else if (status === 1) {
-        console.log("Build successfully, you can get url from: ", msg);
+        console.log("Execute successfully, you can get result from: ", msg);
         client.destroy(); // kill client after server's response
         resolve(msg);
       } else {
         client.destroy(); // kill client after server's response
-        reject("Build Error: ", msg);
+        reject("Execute Error: ", msg);
       }
     });
     client.on('close', () => {
@@ -49,11 +53,11 @@ async function remoteExecChromiumBuild(commitId) {
       reject(e);
     });
   });
-  return Promise.resolve(chromiumUrl);
+  return Promise.resolve(result);
 }
 
 /*
-* Update chromePath and dev_mode to true in config.json
+* Update chromePath to true in config.json
 */
 async function updateConfig(executablePath) {
   if (!fs.existsSync(executablePath)) {
@@ -68,7 +72,6 @@ async function updateConfig(executablePath) {
   } else {
     return Promise.reject('Unsupported test platform');
   }
-  settings["dev_mode"] = true;
   await fs.promises.writeFile(
     path.join(process.cwd(), 'config.json'),
     JSON.stringify(settings, null, 4));
@@ -81,26 +84,29 @@ async function updateConfig(executablePath) {
 */
 async function dlChromiumBuild(chromiumUrl) {
   const chromiumPath = path.join(localChromiumDir, chromiumUrl.split("/").pop());
+  const chromiumBinPath = '/home/webnn/project/chromium-builder/' + chromiumUrl.split("/").pop();
   if (!fs.existsSync(localChromiumDir)) {
-    fs.mkdirSync(localChromiumDir, {recursive: true});
+    fs.mkdirSync(localChromiumDir, { recursive: true });
   }
-  const result = await new Promise((resolve, reject) => {
-    axios({
-      method: 'get',
-      url: chromiumUrl,
-      responseType: 'stream'
-    }).then( response => {
-      console.log(`**************Downloading chromium build to ${chromiumPath}******************`);
-      let stream = fs.createWriteStream(chromiumPath);
-      response.data.pipe(stream).on('close', () => {
-        console.log("**************Download done.*****************");
-        resolve(chromiumPath);
-      });
-    }).catch( error => {
-      reject("Download chromium build error: ", error);
-    });
-  });
-  return Promise.resolve(result);
+  const serverConfig = {
+    host: settings["file_server"]["host"],
+    username: settings["file_server"]["user"],
+    password: settings["file_server"]["pwd"]
+  };
+
+  let sftp = new Client();
+  try {
+    await sftp.connect(serverConfig);
+    console.log(`Downloading remote file: ${chromiumUrl}...`);
+    await sftp.fastGet(chromiumBinPath, chromiumPath);
+    console.log(`Remote file downloaded to ${chromiumPath}.`);
+  } catch (err) {
+    return Promise.reject("Download chromium build error: ", err);
+  } finally {
+    await sftp.end();
+  }
+
+  return Promise.resolve(chromiumPath);
 }
 
 /*
@@ -113,7 +119,7 @@ async function unzipChromium(chromiumPath) {
   const executablePath = path.join(binaryDir, "Chrome-bin", "chrome.exe");
   // Clean up existing binary dir if it's duplicated
   if (fs.existsSync(binaryDir)) {
-    fs.rmdirSync(binaryDir, {recursive: true});
+    fs.rmdirSync(binaryDir, { recursive: true });
   }
   return new Promise((resolve, reject) => {
     // Unzip chromium binary  local command: "7z x -y -sdel -odir_path chrome.7z"
@@ -130,12 +136,16 @@ async function unzipChromium(chromiumPath) {
 * unzip binary to local, and update config.json file
 * @param, {String}, commitId, used for building chromium at the head of specific commit id
 */
-async function GetChromiumBuild(commitId) {
-  console.log("Start chromium build...")
-  const chromiumUrl = await remoteExecChromiumBuild(commitId);
+async function getChromiumBuild(commitId) {
+  console.log(`Start chromium build with ${commitId}!`)
+  const chromiumUrl = await remoteExecCommand(commitId, "build");
   const chromiumPath = await dlChromiumBuild(chromiumUrl);
   const executablePath = await unzipChromium(chromiumPath);
   await updateConfig(executablePath);
 }
 
-module.exports = GetChromiumBuild;
+
+module.exports = {
+  remoteExecCommand: remoteExecCommand,
+  getChromiumBuild: getChromiumBuild
+};

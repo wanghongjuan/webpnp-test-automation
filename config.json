@@ -58,29 +58,27 @@
   "win_chrome_path": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
   "linux_chrome_path": "/usr/bin/google-chrome-unstable",
   "chrome_flags": [],
-  "update_browser_sched": "0 0 0 * * Sat",
-  "intel_test_cadence": "0 0 5 * * Sat",
-  "amd_test_cadence": "0 0 1 * * Sat",
-  "enable_cron": false,
-  "mail_test_report": {
-    "from": "wanming.lin@intel.com",
-    "to": ["yihuix.xie@intel.com", "yangx.a.zhou@intel.com"]
-  },
   "mail_dev_notice": {
     "from": "wanming.lin@intel.com",
     "to":["yangx.a.zhou@intel.com", "yihuix.xie@intel.com"]
   },
-  "result_server": {
-    "host": "10.239.115.92",
-    "username": "banana",
-    "password": "000"
-  },
   "chrome_linux_password": "",
-  "dev_mode": true,
   "chromium_builder": {
-    "enable_chromium_build": false,
-    "commit_id": "",
-    "host": "10.239.61.100",
+    "enable_chromium_build": true,
+    "bisect": {
+      "use_bisect": true,
+      "commits": {
+        "base_commit": { "id": "ef52562", "number": 828610 },
+        "compared_commit": { "id": "ac72cea", "number": 828625 }
+      }
+    },
+    "commit_id": "ef52562",
+    "host": "10.239.61.104",
     "port": "8790"
+  },
+  "file_server": {
+    "host": "powerbuilder.sh.intel.com",
+    "user": "webnn",
+    "pwd": ""
   }
 }

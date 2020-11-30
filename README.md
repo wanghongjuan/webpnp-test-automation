@@ -1,3 +1,5 @@
+This branch is specific for developer development purpose.
+
 This is a test automation framework based on [Playwright](https://github.com/microsoft/playwright), supports key Web workloads automation testing on Chrome browser across multiple platforms, as well as automatically generating test result and sending test report via mail.
 
 ## Support
@@ -36,16 +38,13 @@ The automation test mainly takes the following actions:
   ```
 - Config test plan via config.json:
   1. Set test target in `workloads` fields, pls. don't edit the workload name while you can change the workload's url and running times via `url` and `run_times` fields respectively. You can also remove some of these workloads to in order to run single workload testing.
-  2. To support both Windows and Linux platforms, `win_chrome_path` and `linux_chrome_path` are introduced.
-  3. `chrome_flags` is used for setting specific chrome flag.
-  4. This tool allows to run tests automatically in a pre-set scheduler by using [node-corn](https://github.com/node-cron/node-cron), you can set the test cadence via `intel_test_cadence` and `amd_test_cadence` fields. `amd_test_cadence` is **always before** the `intel_test_cadence` as Intel testing will compare the test results to AMD. Please refer to [cron syntax](https://www.npmjs.com/package/node-cron#cron-syntax) to check how to set a test cadence. The default cadence is running at 00:00 Saturday bi-weekly.
-  5. `mail_test_report` field is used for setting stakeholders' mail list who'd like to receive the test report.
-  6. `mail_dev_notice` field is used for setting mail list who'd like to receive the error message when the testing goes into something wrong or receive test report when `dev_mode` is `true`.
-  7. On Linux platform, please set the `chrome_linux_password` field the Linux sudo password. It's required while upgrading the
+  1. To support both Windows and Linux platforms, `win_chrome_path` and `linux_chrome_path` are introduced.
+  1. `chrome_flags` is used for setting specific chrome flag.
+  1. `mail_dev_notice` field is used for setting mail list who'd like to receive the error message when the testing goes into something wrong or receive test report.
+  1. On Linux platform, please set the `chrome_linux_password` field the Linux sudo password. It's required while upgrading the
   chrome as install Linux package might need sudo permission.
-  8. `dev_mode` represents develop mode, setting it to `true` will skip the browser version check, skip generating and uploading excel file, skip test results sync and upload.
-  9. If you don't want to run the test at a specific schedule, you can simply set `enable_cron` to `false`. Then the browser upgrading will also be skipped.
-  10. `chromium_builder` field is used for running test automation with specific chromium build from build server. Currently only support for Windows platform. The build server will automatically build chromium at the head of commit id passed by user, then upload chromium build to http://powerbuilder.sh.intel.com/project/chromium_builder/, and then this tool get the corresponding chromium build to run testing at target device. Once you set `enable_chromium_build` to `true`, you must set the `commit_id` to the specific commit id for building chromium, usually you only need to pass the first 7 characters of a normal chromium commit id. The build server's host and port are set in `host` and `port` fields by default. Note: with `enable_chromium_build` set to `true`, the tool will automatically udpate the `dev_mode` to `true`.
+  1. If you don't want to run the test at a specific schedule, you can simply set `enable_cron` to `false`. Then the browser upgrading will also be skipped.
+  1. `chromium_builder` field is used for running test automation with specific chromium build from build server. Currently only support for Windows platform. The build server will automatically build chromium at the head of commit id passed by user, then upload chromium build to http://powerbuilder.sh.intel.com/project/chromium_builder/, and then this tool get the corresponding chromium build to run testing at target device. Once you set `enable_chromium_build` to `true`, you must set the `commit_id` to the specific commit id for building chromium, usually you only need to pass the first 7 characters of a normal chromium commit id. The build server's host and port are set in `host` and `port` fields by default.
 
 - Run the test: restart the PC and go to this folder again and run:
   `node main.js`
