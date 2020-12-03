@@ -47,6 +47,14 @@ while True:
         if recv['command'] == 'build':
             commit_id = recv['content']
             ret = build(rev=commit_id)
+        elif recv['command'] == 'log':
+            base_id = int(recv['base_number'])
+            compared_id = int(recv['compared_number'])
+            msg = utils.get_commit_dict(base_id, compared_id)
+            ret = {
+                'status': 1,
+                'msg': msg
+            }
         else:
             msg = "ERROR: incorrect json format!"
             ret = {
@@ -59,12 +67,12 @@ while True:
         print("over")
     except Exception as e:
         # log_to_file(str(e))
-        print('line 65')
+        print('line 70')
         print(e)
         try:
             ret = {
                 'status': -2,
-                'msg': e
+                'msg': str(e)
             }
             sock.send(json.dumps(ret).encode())
         except Exception as e:

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import re
 import sys
 import subprocess
 import datetime
@@ -39,6 +40,55 @@ def Zip(src, dest=None, exclude=[]):
                     myzip.write(file_name)
 
 
+def get_commit_dict(base_master_number, compared_master_number):
+    DriverPath = sys.path[0]
+    repo_path = "c:\\src\\chromium2\\src"
+
+    tmp = 2
+    while tmp > 0:
+        tmp = tmp - 1
+        os.chdir(repo_path)
+
+        if not os.path.exists("%s/log.txt" % DriverPath):
+            # special re-direct repo_path
+            os.system('powershell /c git reset --hard ; git pull')
+            cmd1 = "cmd /c git log > %s/log.txt" % DriverPath
+            if os.system(cmd1):
+                print("get chrome git log error!")
+
+        os.chdir(DriverPath)
+        with open('log.txt', encoding='utf-8') as f:
+            data = f.read()
+
+        reg_string = r'Cr-Commit-Position: refs/heads/master@{#%d}\r?\n[\w\W]*Cr-Commit-Position: refs/heads/master@{#%d}' \
+                     % (compared_master_number+1, base_master_number)
+        data = re.search(reg_string, data)
+        if data:
+            with open('c-m.txt', 'w', encoding='utf-8') as f:
+                ret = data.group()
+                f.write(ret)
+                break
+        elif tmp > 0:
+            print('regular seach not found, remove log file and try again.')
+            os.system('powershell /c rm -r -fo %s/log.txt' % DriverPath)
+            continue
+
+    with open('c-m.txt', encoding='utf-8') as f:
+        data = f.read()
+
+    if not data:
+        print('not data!')
+        return
+
+    ret = re.findall(r'\ncommit (\w+)[\w\W]*?\n *Cr-Commit-Position: refs/heads/master@{#(\d+)}', data)
+    data_dict = {}
+    print(4)
+    if ret:
+        for t in ret:
+            data_dict[t[1]] = t[0]
+    print(data_dict)
+    print(len(data_dict), compared_master_number - base_master_number + 1)
+    return data_dict
 
 
 def winRun(vec):

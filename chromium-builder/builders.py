@@ -19,8 +19,8 @@ class Chromium(object):
         self.cpu = "x64"
         self.dirname = sys.path[0]
         self.sourcePath = os.path.join(self.repoPath, self.source)
-        # self.out_path = "C:\\Apache24\\web\\windows-7zip-chromium"
-        # self.url = "http://10.239.44.134/windows-7zip-chromium/"
+        self.out_path = "C:\\Apache24\\web\\windows-7zip-chromium"
+        self.hostname = "ssgs3@10.239.61.104"
         self.remote_out_path = "webnn@powerbuilder.sh.intel.com:/home/webnn/project/chromium-builder/"
         self.remote_url = "http://powerbuilder.sh.intel.com/project/chromium-builder/"
 
@@ -73,9 +73,9 @@ class Chromium(object):
         name += '.7z'
         print(name)
         src = self.libpaths()
-        # if not os.path.isdir(self.out_path):
-        #     os.mkdir(self.out_path)
-        # dest = os.path.join(self.out_path, name)
+        if not os.path.isdir(self.out_path):
+            os.system('powershell /c mkdir -p ' + self.out_path)
+        dest = os.path.join(self.out_path, name)
         result = {
             'status': 1,
             'msg': None
@@ -95,8 +95,10 @@ class Chromium(object):
                     result['status'] = -6
                     result['msg'] = e
             else:        
-                print("move to apache2 web succeed!")
-                result['msg'] = self.url + name
+                print("move to local dir succeed!")
+
+                # result['msg'] = self.hostname + ':' + dest
+                result['msg'] = dest
         else:
             result['status'] = -5
             result['msg'] = "Cannot find moved 7zip file in web folder!"
@@ -118,6 +120,7 @@ class Chromium(object):
                 Run(['copy', in_argns, out_argns], env)
                 Run(['gn', 'gen', os.path.join(self.sourcePath, 'out', self.cpu)], env)
                 Run(['ninja', '-C', os.path.join(self.sourcePath, 'out', self.cpu), 'chrome', 'mini_installer', '-j40'], env)
+                print(12321)
             except subprocess.CalledProcessError as e:
                 print("Dirty build failed!")
                 try:
@@ -142,14 +145,16 @@ class Chromium(object):
         p = os.path.join(self.repoPath, self.source, 'out', self.cpu, 'chrome.7z')
         return p
 
+
 def build(engine, rev=None):
     print("build")
     result = engine.updateAndBuild(rev=rev)
     if result['status'] != 1:
-        print("error msg:\n"+str(result['msg']))
+        print("error msg:\n", result['msg'])
     else:
-        print("7zip file path: "+str(result['msg']))
+        print("7zip file path: ", result['msg'])
     return result
+
 
 if __name__ == "__main__":
     rev = sys.argv[1] if sys.argv[1:] else None
