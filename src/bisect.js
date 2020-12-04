@@ -27,7 +27,7 @@ async function checkBisectAvailability(baseCommit, comparedCommit) {
   }
 }
 
-async function startBisect(baseCommit, comparedCommit) {
+async function startBisect() {
   const baseCommit = settings["chromium_builder"]["bisect"]["commits"]["base_commit"];
   const comparedCommit = settings["chromium_builder"]["bisect"]["commits"]["compared_commit"];
   let baseCommitNum = baseCommit.number;
@@ -79,20 +79,26 @@ async function startBisect(baseCommit, comparedCommit) {
     if (medianCommitNum == baseCommitNum + 1) {
       break;
     }
-    if (medianResult <= (baseResult + oneThirdDValue)) {
-      if (regRatio > 0)
-        comparedCommitNum = medianCommitNum;
-      else
+    if (regRatio < 0) {
+      if (medianResult <= (baseResult + oneThirdDValue)) {
         baseCommitNum = medianCommitNum;
-    } else if (medianResult >= (comparedResult - oneThirdDValue)) {
-      if (regRatio > 0)
-        baseCommitNum = medianCommitNum;
-      else
+      } else if (medianResult >= (comparedResult - oneThirdDValue)) {
         comparedCommitNum = medianCommitNum;
-    } else {
-      console.log("Bisect Results: ", testResults);
-      return Promise.reject(`Median commit: ${medianCommitId}'s result: ${medianResult} \
+      } else {
+        console.log("Bisect Results: ", testResults);
+        return Promise.reject(`Median commit: ${medianCommitId}'s result: ${medianResult} \
             is in median of (baseResult: ${baseResult}, comparedResult: ${comparedResult}), which is not acceptable. Please check!`);
+      }
+    } else {
+      if (medianResult <= (comparedResult + oneThirdDValue)) {
+        comparedCommitNum = medianCommitNum;
+      } else if (medianResult >= (baseResult - oneThirdDValue)) {
+        baseCommitNum = medianCommitNum;
+      } else {
+        console.log("Bisect Results: ", testResults);
+        return Promise.reject(`Median commit: ${medianCommitId}'s result: ${medianResult} \
+            is in median of (baseResult: ${baseResult}, comparedResult: ${comparedResult}), which is not acceptable. Please check!`);
+      }
     }
     medianCommitNum = Math.round((baseCommitNum + comparedCommitNum) / 2);
   }
