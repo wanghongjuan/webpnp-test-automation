@@ -43,11 +43,17 @@ The automation test mainly takes the following actions:
   1. `mail_dev_notice` field is used for setting mail list who'd like to receive the error message when the testing goes into something wrong or receive test report.
   1. On Linux platform, please set the `chrome_linux_password` field the Linux sudo password. It's required while upgrading the
   chrome as install Linux package might need sudo permission.
-  1. If you don't want to run the test at a specific schedule, you can simply set `enable_cron` to `false`. Then the browser upgrading will also be skipped.
-  1. `chromium_builder` field is used for running test automation with specific chromium build from build server. Currently only support for Windows platform. The build server will automatically build chromium at the head of commit id passed by user, then upload chromium build to http://powerbuilder.sh.intel.com/project/chromium_builder/, and then this tool get the corresponding chromium build to run testing at target device. Once you set `enable_chromium_build` to `true`, you must set the `commit_id` to the specific commit id for building chromium, usually you only need to pass the first 7 characters of a normal chromium commit id. The build server's host and port are set in `host` and `port` fields by default.
+  1. If you want to run the test at a specific schedule, you can simply set `useCron` to `true` in `main.js`, then set `sched` const to when you need to schedule the test.
+  1. `chromium_builder` field is used for running test automation with specific chromium build from build server and bisect commits automatically. Currently only support for Windows platform. The build server will automatically build chromium at the head of commit id passed by user, then upload chromium build to http://powerbuilder.sh.intel.com/project/chromium_builder/, and then this tool get the corresponding chromium build to run testing at target device.
+     1. Single commit:  Once you set `enable_chromium_build` to `true`, you must set the `commit_id` to the specific commit id for building chromium, usually you only need to pass the first 7 characters of a normal chromium commit id. The build server's host and port are set in `host` and `port` fields by default.
+     2. Bisect commits: Set `enable_chromium_build` to `true`, `use_bisect` to `true`, `commits` fields to what you commits want to bisect with their commit id and commit number, `pwd` to password of http://powerbuilder.sh.intel.com/project/chromium_builder/.
 
 - Run the test: restart the PC and go to this folder again and run:
   `node main.js`
+- Run multiple chrome binaries:
+  1. Create `configs` folder under `webpnp-test-automation` directory.
+  1. Put config.json files to `configs` folder and change the configuration as you need.
+  1. Run `node main.js multi`
 - Add a new workload
   If you want to a new workload, you need:
   * Update the `workloads` array of config.json.

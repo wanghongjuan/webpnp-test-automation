@@ -64,15 +64,15 @@
   },
   "chrome_linux_password": "",
   "chromium_builder": {
-    "enable_chromium_build": true,
+    "enable_chromium_build": false,
     "bisect": {
-      "use_bisect": true,
+      "use_bisect": false,
       "commits": {
-        "base_commit": { "id": "ef52562", "number": 828610 },
-        "compared_commit": { "id": "ac72cea", "number": 828625 }
+        "base_commit": { "id": "", "number": 0 },
+        "compared_commit": { "id": "", "number": 0 }
       }
     },
-    "commit_id": "ef52562",
+    "commit_id": "",
     "host": "10.239.61.104",
     "port": "8790"
   },

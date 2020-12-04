@@ -3,49 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = fs.promises;
 const net = require('net');
-
-/*
-* Exec chromium build on remote host
-* @param {String}, commit id
-*/
-async function remoteExecChromiumBuild(commitId) {
-  const message = {command: "build", content: commitId};
-  const host = settings["chromium_builder"]["host"];
-  const port = settings["chromium_builder"]["port"];
-  const chromiumUrl = await new Promise((resolve, reject) => {
-    const client = new net.Socket();
-    client.connect(port, host, () => {
-      client.write(JSON.stringify(message));
-    });
-    
-    client.on('data', data => {
-      console.log('Received: ' + data);
-      let status = JSON.parse(data).status;
-      let msg = JSON.parse(data).msg;
-      // Socket connected
-      if (status === 0) {
-        console.log(msg);
-        console.log("Waiting for build completed, this may take very long time...");
-      // Build done, this will take a very long time
-      } else if (status === 1) {
-        console.log("Build successfully, you can get url from: ", msg);
-        client.destroy(); // kill client after server's response
-        resolve(msg);
-      } else {
-        client.destroy(); // kill client after server's response
-        reject("Build Error: ", msg);
-      }
-    });
-    client.on('close', () => {
-      console.log('Connection closed');
-    });
-    client.on('error', e => {
-      console.log(e);
-      reject(e);
-    });
-  });
-  return Promise.resolve(chromiumUrl);
-}
+const runSingleReport = require('./run_single_report.js');
+const getChromiumBuild = require('./get_chromium_build.js');
 
 /*
 * Update commit_id in config.json
@@ -59,20 +18,87 @@ async function updateConfig(commitId) {
 }
 
 
-async function checkBisectAvailability(base_commit, compared_commit) {
+async function checkBisectAvailability(baseCommit, comparedCommit) {
   if (settings['workloads'].length !== 1) {
     return Promise.reject('Bisect only support running one workload');
   }
-  if (base_commit["number"] > compared_commit["number"]) {
+  if (baseCommit["number"] > comparedCommit["number"]) {
     return Promise.reject("base_commit's number should be less than compared_commit's number");
   }
 }
 
-async function startBisect(resultPath) {
-  for (const key in resultPath) {
-    const resultPath = resultPaths[key];
-  }
+async function startBisect(baseCommit, comparedCommit) {
+  const baseCommit = settings["chromium_builder"]["bisect"]["commits"]["base_commit"];
+  const comparedCommit = settings["chromium_builder"]["bisect"]["commits"]["compared_commit"];
+  let baseCommitNum = baseCommit.number;
+  let comparedCommitNum = comparedCommit.number;
 
+  console.log("Start Bisect....");
+  await checkBisectAvailability(baseCommit, comparedCommit);
+
+  // Run boundary commit ids first
+  await updateConfig(baseCommit.id);
+  console.log("Start running base commit...");
+  const baseResultPath = await runSingleReport();
+  const baseResult = await getTestScore(baseResultPath);
+
+  await updateConfig(comparedCommit.id);
+  console.log("Start running compared commit...");
+  const comparedResultPath = await runSingleReport();
+  const comparedResult = await getTestScore(comparedResultPath);
+
+
+  // Run median commit
+  const commitLogs = await getChromiumBuild.remoteExecCommand('', 'log', baseCommitNum, comparedCommitNum);
+  const regRatio = baseResult / comparedResult - 1;
+  console.log('Regression ratio of bisect boundary is: ', regRatio);
+  if (Math.abs(regRatio) < 0.01) {
+    return Promise.reject(`The regression ratio is less than 1%, this tool could not precisely find the root cause commit.`);
+  }
+  let medianCommitNum = Math.round((baseCommitNum + comparedCommitNum) / 2);
+  const oneThirdDValue = Math.abs(comparedResult - baseResult) / 3;
+  // Bisect algorithm:
+  // oneThirdDValue: abs(compareResult - basedResult)/3, accept as variance
+  // - If medianResult is less than ( baseResult + oneThirdDValue), treats as no change to baseResult
+  // - If medianResult is more than (comparedResult - oneThirdDValue), treats as no change to comparedResult
+  // - Otherwise, throws as unexpected result
+  let testResults = [];
+  testResults.push({ "baseCommitNum": baseCommitNum, "commitId": baseCommit.id, "totalScore": baseResult });
+  testResults.push({ "comparedCommitNum": comparedCommitNum, "commitId": comparedCommit.id, "totalScore": comparedResult });
+  while (medianCommitNum > baseCommitNum) {
+    let medianCommitId = "";
+    for (let key in commitLogs) {
+      if (key === medianCommitNum.toString())
+        medianCommitId = commitLogs[key];
+    }
+    await updateConfig(medianCommitId);
+    let medianResultPath = await runSingleReport();
+    console.log("Commit number: ", medianCommitNum);
+    let medianResult = await getTestScore(medianResultPath);
+    testResults.push({ "commitNum": medianCommitNum, "commitId": medianCommitId, "totalScore": medianResult });
+    if (medianCommitNum == baseCommitNum + 1) {
+      break;
+    }
+    if (medianResult <= (baseResult + oneThirdDValue)) {
+      if (regRatio > 0)
+        comparedCommitNum = medianCommitNum;
+      else
+        baseCommitNum = medianCommitNum;
+    } else if (medianResult >= (comparedResult - oneThirdDValue)) {
+      if (regRatio > 0)
+        baseCommitNum = medianCommitNum;
+      else
+        comparedCommitNum = medianCommitNum;
+    } else {
+      console.log("Bisect Results: ", testResults);
+      return Promise.reject(`Median commit: ${medianCommitId}'s result: ${medianResult} \
+            is in median of (baseResult: ${baseResult}, comparedResult: ${comparedResult}), which is not acceptable. Please check!`);
+    }
+    medianCommitNum = Math.round((baseCommitNum + comparedCommitNum) / 2);
+  }
+  console.log("Bisect Results: ", testResults);
+
+  return Promise.resolve();
 }
 
 async function getTestScore(resultPaths) {
@@ -90,8 +116,5 @@ async function getTestScore(resultPaths) {
 }
 
 module.exports = {
-  updateConfig: updateConfig,
-  getTestScore: getTestScore,
-  startBisect: startBisect,
-  checkBisectAvailability: checkBisectAvailability
+  startBisect: startBisect
 }
