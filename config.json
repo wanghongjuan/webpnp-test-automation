@@ -59,7 +59,7 @@
   "linux_chrome_path": "/usr/bin/google-chrome-unstable",
   "chrome_flags": [],
   "mail_dev_notice": {
-    "from": "wanming.lin@intel.com",
+    "from": "hongjuan.wang@intel.com",
     "to":["yangx.a.zhou@intel.com", "yihuix.xie@intel.com"]
   },
   "chrome_linux_password": "",
