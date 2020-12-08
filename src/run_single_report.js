@@ -60,4 +60,10 @@ async function runSingleReport() {
   }
 }
 
+const myArgs = process.argv.slice(2);
+  console.log('myArgs: ', myArgs);
+  if (myArgs.length > 0) {
+    if (myArgs.includes("run"))
+      runSingleReport();
+  }
 module.exports = runSingleReport;

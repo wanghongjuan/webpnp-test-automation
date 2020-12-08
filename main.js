@@ -7,6 +7,7 @@ const cron = require('node-cron');
 const settings = require('./config.json');
 const bisect = require('./src/bisect.js');
 const runSingleReport = require('./src/run_single_report.js');
+const { execSync } = require('child_process');
 
 // async function runMultiConfigs() {
 //   const configDir = path.join(process.cwd(), 'configs');
@@ -50,7 +51,7 @@ async function main(multiRun) {
     } else {
       for (let configPath of configPaths) {
         await fsPromises.copyFile(path.join(configDir, configPath), originConfigPath);
-        await runSingleReport();
+        execSync('node src/run_single_report.js run', {stdio: 'inherit'});
       }
     }
   }
