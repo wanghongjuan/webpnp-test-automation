@@ -189,6 +189,7 @@ async function genWorkloadsResults(deviceInfo) {
     'Aquarium': runAquarium,
     'BaseMark': runBasemark,
     'TensorFlow_Wasm': runTensorflow,
+    'TensorFlow_Simd': runTensorflow,
     'TensorFlow_WebGL': runTensorflow
   };
   for (const workload of settings.workloads) {

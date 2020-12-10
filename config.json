@@ -49,6 +49,12 @@
       "sleep_interval": 300
     },
     {
+      "name": "TensorFlow_Simd",
+      "url": "http://user-awfy.sh.intel.com:8080/tensorflow/benchmarks/local-benchmark/",
+      "run_times3": 3,
+      "sleep_interval": 300
+    },
+    {
       "name": "TensorFlow_WebGL",
       "url": "http://user-awfy.sh.intel.com:8080/tensorflow/benchmarks/local-benchmark/",
       "run_times": 3,
