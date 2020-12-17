@@ -7,7 +7,7 @@ const fs = require('fs');
 async function runTensorflowTest(workload, flags) {
   let args = ["--start-maximized"];
   if(workload.name === "TensorFlow_Simd"){
-    let simdFlag = "--enable-feature=WebAssemblySimd,WebAssemblyThreads";
+    let simdFlag = "--enable-features=WebAssemblySimd,WebAssemblyThreads";
     args.push(simdFlag);
   }
   if (flags !== undefined) {
