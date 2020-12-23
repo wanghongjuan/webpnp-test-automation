@@ -51,7 +51,7 @@
     {
       "name": "TensorFlow_Simd",
       "url": "http://user-awfy.sh.intel.com:8080/tensorflow/benchmarks/local-benchmark/",
-      "run_times3": 3,
+      "run_times": 3,
       "sleep_interval": 300
     },
     {
