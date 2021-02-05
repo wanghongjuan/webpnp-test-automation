@@ -56,3 +56,4 @@ The automation test mainly takes the following actions:
   - This tool uses playwright v1.2.1, which is only guarantee to support Chromium >= 85.0.4182.0.
   - Tester should maintain the cpu_list.json file which is a CPU info lists used for finding matched CPU code name and corresponding competitor's test result.
   - Before testing, please restart the test device to make a clean up environment.
+  - We have 'jstc' branch specific for development testing purpose, which does not connect to report server but supports more workloads automation, bisect automation, and ect., for more details, please refer to https://github.com/Honry/webpnp-test-automation/blob/jstc/README.md.

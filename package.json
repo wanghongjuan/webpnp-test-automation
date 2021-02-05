@@ -8,15 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qiuzhong/webpnp-test-automation.git"
+    "url": ""
   },
   "keywords": [],
   "author": "Wanming Lin",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/qiuzhong/webpnp-test-automation/issues"
-  },
-  "homepage": "https://github.com/qiuzhong/webpnp-test-automation#readme",
+  "homepage": "",
   "dependencies": {
     "7zip-min": "^1.1.2",
     "axios": "^0.19.2",

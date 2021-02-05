@@ -6,6 +6,59 @@ const settings = require('../../config.json');
 const { exec } = require("child_process");
 
 
+/**
+ * Get date of json files
+ * @param {String} jsonPath 
+ */
+async function getJsonFileDate(fileInfo) {
+  dateList = [];
+  for (let workload in fileInfo) {
+    let jsonPath = fileInfo[workload];
+    let resultFileBasename = path.basename(jsonPath, '.json');
+    let resultFileParts = resultFileBasename.split('_');
+    let date = resultFileParts[0].substring(0, 8);
+    await dateList.push(date);
+  }
+  return Promise.resolve(dateList);
+}
+
+/**
+ * if json files' datetime are not the same, rename them
+ * @param {String} jsonPath old json path name
+ * @param {String} newDate new date time in json path
+ */
+async function renameJsonFile(jsonPath, newDate) {
+  let resultFileBasename = path.basename(jsonPath, '.json');
+  let resultFileDirname = path.dirname(jsonPath);
+  let resultFileParts = resultFileBasename.split('_');
+
+  let oldDate = resultFileParts[0].substring(0, 8);
+
+  if (oldDate === newDate) {
+    return Promise.resolve(jsonPath);
+  } else {
+    resultFileParts[0] = newDate + resultFileParts[0].substring(8,14);
+    resultFileBasename = resultFileParts.join('_');
+    newResultFilePath = path.join(resultFileDirname, resultFileBasename+'.json');
+
+    await fsPromises.rename(jsonPath, newResultFilePath);
+    return Promise.resolve(newResultFilePath);
+  }
+}
+
+/**
+ * rename all datetime of json files
+ * @param {Object} fileInfo 
+ * @param {String} newDate 
+ */
+async function genJsonDateTime(fileInfo, newDate) {
+  for (let workload in fileInfo) {
+    let resultFilePath = fileInfo[workload];
+    await renameJsonFile(resultFilePath, newDate);
+  }
+  return Promise.resolve();
+}
+
 /*
 * Get excel filename base on JSON file path
 */
@@ -17,7 +70,8 @@ function getExcelFilename(jsonPath, platform) {
   let device = resultFileParts[1];
 
   let browserParts = resultFileParts[resultFileParts.length - 1].split('-');
-  browserParts.pop();
+
+  // browserParts.pop();
   let browser = [platform, browserParts.join('_')].join('-');
 
   let excelFileName = [date, browser, device].join('_') + '.xlsx';
@@ -38,11 +92,14 @@ async function genExcelFiles(fileInfo, platform) {
     if (!fs.existsSync(resultFilePath)) {
       return Promise.reject(`${resultFilePath} does not exist, failed to write to Excel!`);
     }
+    // Rename json files if datetime of them are not the same
+    // resultFilePath = await renameJsonFile(resultFilePath, newDate);
+
     let rawData = await fsPromises.readFile(resultFilePath, 'utf-8');
     results[workload] = JSON.parse(rawData);
 
     if (excelFileName === '')
-      excelFileName = getExcelFilename(resultFilePath, platform);
+      excelFileName = await getExcelFilename(resultFilePath, platform);
   }
 
   console.log(`Excel file name: ${excelFileName}`);
@@ -162,6 +219,8 @@ async function execUploadScript(file_path) {
 }
 
 module.exports = {
+  getJsonFileDate: getJsonFileDate,
+  genJsonDateTime: genJsonDateTime,
   genExcelFiles: genExcelFiles,
   execUploadScript: execUploadScript
 };

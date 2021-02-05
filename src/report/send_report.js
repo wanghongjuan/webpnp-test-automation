@@ -17,10 +17,34 @@ async function main() {
   const newResultsDir = path.join(settings.result_server.reportDir, 'new-results');
   let now = moment();
   const weekAndDay = now.week() + '.' + now.day();
-  const availableReports = await checkReport.checkAvailableReports(newResultsDir);
+  const reports = await checkReport.checkAvailableReports(newResultsDir);
   // No available reports
+  if (reports.length == 0)
+    return;
+
+  let dateList = [];
+  for (let availableReport of reports) {
+    for (let key in availableReport.report) {
+      const workloadResults = availableReport['report'][key]['workloads'];
+
+      const newDateList = await excel.getJsonFileDate(workloadResults);
+      dateList = dateList.concat(newDateList);
+    }
+    dateList.sort().reverse();
+    const newDate = dateList[0];
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>newDate: ', newDate);
+    for (let key in availableReport.report) {
+      const workloadResults = availableReport['report'][key]['workloads'];
+      // Rename json files if datetime of them are not the same
+      await excel.genJsonDateTime(workloadResults, newDate);
+      // Timeout for a while for webpnp report server to execute data import
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+  }
+  const availableReports = await checkReport.checkAvailableReports(newResultsDir);
   if (availableReports.length == 0)
     return;
+
   for (let availableReport of availableReports) {
     const platform = availableReport.platform;
     const browser = availableReport.browser;

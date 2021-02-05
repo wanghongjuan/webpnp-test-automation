@@ -114,8 +114,8 @@ async function getNewResults(platformDir) {
  * @param {Object}, avaliableReport
  * @param {String}, platform
  */
-async function moveReportFiles(avaliableReport, platform) {
-  const newResultsDir = path.join(settings.result_server.reportDir, 'old-results', platform);
+async function moveReportFiles(avaliableReport, platform, tempDir = 'old-results') {
+  const newResultsDir = path.join(settings.result_server.reportDir, tempDir, platform);
   for (let key in avaliableReport) {
     const workloadPaths = avaliableReport[key]['workloads'];
     for (let workloadName in workloadPaths) {
@@ -165,7 +165,36 @@ async function checkAvailableReports(testResultsDir) {
   return Promise.resolve(availaleReports);
 }
 
+/**
+ * Check all the test results for delivering one round test report in old-results
+ * @param {String} channel browser channel in {Stable, Beta, Dev, Canary}, the first letter must be capitalized
+ * @param {String} version browser version, e.g. 88.0.4324.146
+ * @param {String} platform test platform, default is Windows
+ */
+async function checkReviewReports(channel, version, platform) {
+  const oldResultsDir = path.join(settings.result_server.reportDir, 'old-results', platform);
+  // const oldResultsDir = path.join(settings.result_server.reportDir, 'new-results-bak', platform);
+  let reviewReports = {};
+  const {filesList, testsList} = await getNewResults(oldResultsDir);
+  const test = channel + '-' + version
+  const channels = Object.keys(reportConfig.channels);
+  if (channels.includes(channel)) {
+      console.log(`LOG: Start looking for test report: ${platform} Chrome ${test}`);
+      // Find if there're completed test report
+      let report = await findReport(test, filesList);
+      if (report) {
+        reviewReports['report'] = report;
+        reviewReports['platform'] = platform;
+        reviewReports['browser'] = 'Chrome-' + test;
+      }
+    } else {
+      console.log(`WARNING: unknown ${platform} browser channel: ${test}`);
+    }
+  return Promise.resolve(reviewReports);
+}
+
 module.exports = {
   checkAvailableReports: checkAvailableReports,
-  moveReportFiles: moveReportFiles
+  moveReportFiles: moveReportFiles,
+  checkReviewReports: checkReviewReports
 };
